@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Login - Staff & Citizen</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        .login-section { position: fixed; top: 0; left: 0; display: flex; justify-content: center; align-items: center; width: 100%; height: 100vh; overflow: hidden; z-index: 1000; }
+        .login-section .bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+        
+        .login-box { position: relative; padding: 40px; background: rgba(253, 230, 203, 0.85); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 25px; width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); }
+        .login-box h2 { text-align: center; font-size: 2em; color: #8a3b24; }
+        
+        /* Role Tabs */
+        .role-tabs { display: flex; justify-content: space-between; background: #fff; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
+        .role-tabs button { flex: 1; padding: 12px; border: none; background: transparent; color: #8a3b24; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .role-tabs button.active { background: #8a3b24; color: #fff; }
+        
+        .input-group { margin-bottom: 15px; }
+        .input-group label { color: #8a3b24; font-weight: 500; display: block; margin-bottom: 5px; }
+        .input-group input { width: 100%; padding: 12px 15px; font-size: 1em; color: #8a3b24; border-radius: 10px; border: none; outline: none; }
+        
+        .btn-submit { width: 100%; padding: 14px; border: none; background: #8a3b24; color: #fff; font-size: 1.1em; font-weight: 600; border-radius: 10px; cursor: pointer; transition: 0.3s; }
+        .btn-submit:hover { background: #6b2d1b; }
+        .hidden { display: none !important; }
+        .error-message { color: #d64c42; text-align: center; font-weight: 600; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    <section class="login-section">
+        <!-- Background Image (Use KHK Autumn Background) -->
+        <img src="Images/autumn-bg.jpg" class="bg" onerror="this.src='https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?q=80&w=1920'"> 
+        
+        <div class="login-box">
+            <h2>Welcome to Portal</h2>
+            
+            <!-- Tabs for Citizen vs Staff -->
+            <div class="role-tabs">
+                <button id="tab-citizen" class="active" onclick="switchRole('citizen')">Citizen Login</button>
+                <button id="tab-staff" onclick="switchRole('staff')">Staff Login</button>
+            </div>
+
+            <!-- CITIZEN LOGIN (OTP) -->
+            <div id="citizen-view">
+                <form id="phone-login-form">
+                    <div class="input-group">
+                        <label>Mobile Number (नागरिक लॉगिन)</label>
+                        <input type="tel" id="phone-number" placeholder="+91 98765 43210" required>
+                    </div>
+                    <button class="btn-submit" type="submit" id="send-otp-btn">Send OTP</button>
+                </form>
+                
+                <form id="otp-login-form" class="hidden">
+                    <div class="input-group">
+                        <label>Enter OTP Code</label>
+                        <input type="number" id="otp-code" required>
+                    </div>
+                    <button class="btn-submit" type="submit">Verify & Login</button>
+                </form>
+            </div>
+
+            <!-- STAFF LOGIN (Email) -->
+            <div id="staff-view" class="hidden">
+                <form id="email-login-form">
+                    <div class="input-group">
+                        <label>Staff Email (कर्मचारी लॉगिन)</label>
+                        <input type="email" id="email" placeholder="staff@school.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="••••••••" required>
+                    </div>
+                    <button class="btn-submit" type="submit">Secure Login</button>
+                </form>
+            </div>
+
+            <p id="error-message" class="error-message"></p>
+            <div id="recaptcha-container"></div>
+        </div>
+    </section>
+
+    <script>
+        // Tab Switching Logic
+        function switchRole(role) {
+            document.getElementById('error-message').innerText = "";
+            if(role === 'citizen') {
+                document.getElementById('tab-citizen').classList.add('active');
+                document.getElementById('tab-staff').classList.remove('active');
+                document.getElementById('citizen-view').classList.remove('hidden');
+                document.getElementById('staff-view').classList.add('hidden');
+            } else {
+                document.getElementById('tab-staff').classList.add('active');
+                document.getElementById('tab-citizen').classList.remove('active');
+                document.getElementById('staff-view').classList.remove('hidden');
+                document.getElementById('citizen-view').classList.add('hidden');
+            }
+        }
+
+        // Firebase Configuration (Replace with your actual config)
+        const firebaseConfig = { apiKey: "YOUR_API_KEY", authDomain: "YOUR_PROJECT.firebaseapp.com" };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        let confirmationResult;
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { 'size': 'invisible' });
+
+        // Staff Email Login
+        document.getElementById('email-login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('password').value;
+            auth.signInWithEmailAndPassword(email, pass).then(() => {
+                window.location.href = "staff-dashboard.html"; // Redirect to KHK Staff Dashboard
+            }).catch(err => document.getElementById('error-message').innerText = err.message);
+        });
+
+        // Citizen Phone Login (Send OTP)
+        document.getElementById('phone-login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const phone = document.getElementById('phone-number').value;
+            document.getElementById('send-otp-btn').innerText = "Sending...";
+            auth.signInWithPhoneNumber(phone, window.recaptchaVerifier).then((result) => {
+                confirmationResult = result;
+                document.getElementById('phone-login-form').classList.add('hidden');
+                document.getElementById('otp-login-form').classList.remove('hidden');
+            }).catch(err => {
+                document.getElementById('error-message').innerText = err.message;
+                document.getElementById('send-otp-btn').innerText = "Send OTP";
+            });
+        });
+
+        // Citizen OTP Verification
+        document.getElementById('otp-login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const otp = document.getElementById('otp-code').value;
+            confirmationResult.confirm(otp).then(() => {
+                window.location.href = "citizen-apply.html"; // Redirect to Citizen Apply Portal
+            }).catch(err => document.getElementById('error-message').innerText = "Invalid OTP.");
+        });
+    </script>
+</body>
+</html>

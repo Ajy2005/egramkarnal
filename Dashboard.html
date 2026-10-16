@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASSK - ऑपरेटर डॅशबोर्ड</title>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Poppins', 'Mukta', sans-serif; 
+            background-color: #f4f7fa;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 260px;
+            background: #2c3e50;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s;
+        }
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            background: #1a252f;
+            border-bottom: 2px solid #d35400;
+        }
+        .sidebar-header h2 { font-size: 22px; color: #d35400; }
+        .sidebar-header p { font-size: 12px; color: #bdc3c7; }
+        
+        .sidebar-menu { list-style: none; padding: 20px 0; flex: 1; }
+        .sidebar-menu li { padding: 12px 25px; margin-bottom: 5px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; gap: 10px; font-size: 16px;}
+        .sidebar-menu li:hover, .sidebar-menu li.active { background: #d35400; color: #fff; border-left: 5px solid #f1c40f;}
+        
+        .logout-btn { background: #c0392b; text-align: center; padding: 15px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .logout-btn:hover { background: #e74c3c; }
+
+        /* --- Main Content --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        /* Topbar */
+        .topbar {
+            background: #fff;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .topbar h2 { color: #34495e; font-size: 22px; }
+        .user-profile { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #2c3e50; }
+        .user-profile span { background: #e67e22; color: #fff; padding: 8px 12px; border-radius: 50%; }
+
+        /* Dashboard Body */
+        .dashboard-body { padding: 30px; }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 4px solid transparent;
+        }
+        .stat-card.blue { border-color: #3498db; }
+        .stat-card.orange { border-color: #f39c12; }
+        .stat-card.green { border-color: #27ae60; }
+        
+        .stat-info h3 { font-size: 30px; color: #2c3e50; }
+        .stat-info p { color: #7f8c8d; font-size: 15px; font-weight: 600; }
+        .stat-icon { font-size: 40px; opacity: 0.2; }
+
+        /* Table Section */
+        .table-container {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            padding: 25px;
+            overflow-x: auto;
+        }
+        .table-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .table-header h3 { color: #2c3e50; font-size: 20px; }
+        .search-box { padding: 8px 15px; border: 1px solid #cbd5e1; border-radius: 5px; outline: none; }
+
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        thead { background: #f8fafc; }
+        th { padding: 15px; text-align: left; color: #34495e; font-size: 15px; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 15px; color: #475569; vertical-align: middle; }
+        tr:hover { background: #f1f5f9; }
+
+        /* Badges & Buttons */
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .badge-pending { background: #fef08a; color: #854d0e; }
+        .badge-done { background: #bbf7d0; color: #166534; }
+
+        .btn-view { color: #3498db; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-flex; align-items: center; gap:5px;}
+        .btn-view:hover { text-decoration: underline; }
+        
+        .btn-verify {
+            background: #27ae60; color: #fff; border: none; padding: 8px 15px; border-radius: 5px;
+            cursor: pointer; font-weight: bold; transition: 0.3s;
+        }
+        .btn-verify:hover { background: #1e8449; }
+
+        /* Responsive */
+        @media screen and (max-width: 900px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; }
+            .sidebar-menu { display: flex; overflow-x: auto; padding: 10px; }
+            .sidebar-menu li { white-space: nowrap; margin-bottom: 0; }
+            .logout-btn { display: none; /* Move to topbar on mobile */ }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>ASSK कर्नाळ</h2>
+            <p>ऑपरेटर पॅनेल</p>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="active">📊 डॅशबोर्ड (Dashboard)</li>
+            <li>⏳ प्रलंबित अर्ज (Pending)</li>
+            <li>✅ पूर्ण झालेले (Verified)</li>
+            <li>📄 अहवाल (Reports)</li>
+            <li>⚙️ सेटिंग्ज (Settings)</li>
+        </ul>
+        <div class="logout-btn" onclick="logout()">
+            🚪 बाहेर पडा (Log Out)
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h2>पेमेंट व्हेरिफिकेशन कक्ष</h2>
+            <div class="user-profile">
+                <span>ए</span> ॲडमिन ऑपरेटर
+            </div>
+        </div>
+
+        <!-- Dashboard Body -->
+        <div class="dashboard-body">
+            
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card blue">
+                    <div class="stat-info">
+                        <h3 id="count-total">0</h3>
+                        <p>एकूण आलेले अर्ज</p>
+                    </div>
+                    <div class="stat-icon">📁</div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-info">
+                        <h3 id="count-pending">0</h3>
+                        <p>पेमेंट पेंडिंग (प्रलंबित)</p>
+                    </div>
+                    <div class="stat-icon">⏳</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-info">
+                        <h3 id="count-verified">0</h3>
+                        <p>व्हेरिफाय झालेले (मंजूर)</p>
+                    </div>
+                    <div class="stat-icon">✅</div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-container">
+                <div class="table-header">
+                    <h3>नवीन अर्जांची यादी (Application List)</h3>
+                    <input type="text" id="searchInput" class="search-box" placeholder="नाव किंवा UTR ने शोधा..." onkeyup="filterTable()">
+                </div>
+
+                <table id="appTable">
+                    <thead>
+                        <tr>
+                            <th>अर्ज क्र.</th>
+                            <th>अर्जदाराचे नाव</th>
+                            <th>दाखला प्रकार</th>
+                            <th>बँक UTR क्र. / पुरावा</th>
+                            <th>सद्यस्थिती</th>
+                            <th>कृती (Action)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be populated here via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // डमी डेटा: जर LocalStorage मध्ये डेटा नसेल तर सिस्टीम रिकामी दिसू नये म्हणून काही उदाहरणे टाकली आहेत.
+        function initializeDummyData() {
+            let db = JSON.parse(localStorage.getItem('gp_applications'));
+            if (!db || db.length === 0) {
+                db = [
+                    { appNo: "GP-2026-10523", name: "अभिषेक रमेश मोहिते", service: "जन्म नोंद दाखला", utr: "123456789012", screenshot: "#", status: "Pending", date: new Date().toLocaleDateString() },
+                    { appNo: "GP-2026-45210", name: "सुनील तुकाराम जाधव", service: "नमुना नं. ८ चा उतारा", utr: "987654321098", screenshot: "#", status: "Pending", date: new Date().toLocaleDateString() },
+                    { appNo: "GP-2026-89654", name: "कविता संजय पाटील", service: "रहिवासी दाखला", utr: "564738291045", screenshot: "#", status: "Done", date: new Date().toLocaleDateString() }
+                ];
+                localStorage.setItem('gp_applications', JSON.stringify(db));
+            }
+        }
+
+        // लोड डॅशबोर्ड डेटा
+        function loadDashboard() {
+            let db = JSON.parse(localStorage.getItem('gp_applications')) || [];
+            
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+
+            let total = db.length;
+            let pending = 0;
+            let verified = 0;
+
+            // डेटा उलट क्रमाने दाखवा (नवीन अर्ज वरती येतील)
+            db.reverse().forEach((record, index) => {
+                
+                // आकडेवारी मोजणे
+                if(record.status === "Pending") pending++;
+                if(record.status === "Done") verified++;
+
+                const statusBadge = record.status === 'Pending' 
+                    ? `<span class="badge badge-pending">⏳ Pending</span>` 
+                    : `<span class="badge badge-done">✅ Verified</span>`;
+
+                const actionBtn = record.status === 'Pending' 
+                    ? `<button class="btn-verify" onclick="verifyApp('${record.appNo}')">व्हेरिफाय करा</button>` 
+                    : `<span style="color:#27ae60; font-weight:bold;">मंजूर केले</span>`;
+
+                // जर खरा स्क्रीनशॉट असेल तर नवीन टॅबमध्ये उघडेल
+                const screenshotLink = record.screenshot !== "#" 
+                    ? `<a href="${record.screenshot}" target="_blank" class="btn-view">👁️ पावती पहा</a>` 
+                    : `<span style="color:#999; font-size:12px;">(फोटो उपलब्ध नाही)</span>`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><b>${record.appNo}</b></td>
+                        <td>${record.name}</td>
+                        <td>${record.service}</td>
+                        <td>
+                            <b>UTR:</b> ${record.utr} <br>
+                            ${screenshotLink}
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td>${actionBtn}</td>
+                    </tr>
+                `;
+            });
+
+            // कार्ड्समधील आकडेवारी अपडेट करणे
+            document.getElementById('count-total').innerText = total;
+            document.getElementById('count-pending').innerText = pending;
+            document.getElementById('count-verified').innerText = verified;
+        }
+
+        // अर्ज व्हेरिफाय करणे
+        function verifyApp(appNo) {
+            if(confirm(`तुम्ही ${appNo} या अर्जाची ५० रुपये पेमेंट पावती तपासली आहे का? पेमेंट मंजूर करायचे?`)) {
+                let db = JSON.parse(localStorage.getItem('gp_applications')) || [];
+                const recordIndex = db.findIndex(r => r.appNo === appNo);
+                
+                if(recordIndex !== -1) {
+                    db[recordIndex].status = "Done"; // स्टेट्स 'Done' करणे
+                    localStorage.setItem('gp_applications', JSON.stringify(db)); // पुन्हा सेव्ह करणे
+                    
+                    alert("✅ पेमेंट यशस्वीरित्या व्हेरिफाय झाले!");
+                    loadDashboard(); // टेबल रिफ्रेश करणे
+                }
+            }
+        }
+
+        // टेबलमध्ये नावाने शोधणे (Search / Filter)
+        function filterTable() {
+            let input = document.getElementById("searchInput").value.toUpperCase();
+            let table = document.getElementById("appTable");
+            let tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                let tdName = tr[i].getElementsByTagName("td")[1]; // Name Column
+                let tdUtr = tr[i].getElementsByTagName("td")[3]; // UTR Column
+                
+                if (tdName || tdUtr) {
+                    let textValue = (tdName.textContent || tdName.innerText) + " " + (tdUtr.textContent || tdUtr.innerText);
+                    if (textValue.toUpperCase().indexOf(input) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }       
+            }
+        }
+
+        // लॉगआउट फंक्शन
+        function logout() {
+            if(confirm("तुम्हाला खात्री आहे की तुम्हाला सिस्टीम मधून बाहेर पडायचे आहे?")) {
+                // Redirect to login page
+                // window.location.href = "assk-login.html";
+                alert("तुम्ही यशस्वीरित्या लॉगआउट झाला आहात.");
+            }
+        }
+
+        // पेज लोड झाल्यावर डेटा इनिशियलाईज करणे
+        window.onload = function() {
+            initializeDummyData();
+            loadDashboard();
+        };
+    </script>
+</body>
+</html>
